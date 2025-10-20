@@ -1,0 +1,300 @@
+import { useEffect, useState } from 'react'
+import { FaPlay, FaSearch, FaFilter, FaBars, FaCalendarAlt, FaGlobe } from 'react-icons/fa'
+import { motion, AnimatePresence } from 'framer-motion'
+import ThemeToggle from './ThemeToggle'
+
+export default function Navbar({ 
+  search, 
+  onSearchChange, 
+  genres = [], 
+  selectedGenre, 
+  onGenreChange,
+  countries = [],
+  selectedCountry,
+  onCountryChange,
+  years = [],
+  selectedYear,
+  onYearChange
+}) {
+  const [query, setQuery] = useState(search || '')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+
+  useEffect(() => {
+    setQuery(search || '')
+  }, [search])
+
+  return (
+    <header className="sticky top-0 z-50" style={{
+      background: 'rgba(255,255,255,0.1)',
+      backdropFilter: 'blur(20px)',
+      borderBottom: '1px solid var(--border-light)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+    }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-20 flex items-center justify-between">
+          {/* Logo */}
+          <motion.div 
+            className="flex items-center gap-3"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="p-3 rounded-2xl ps-4" style={{background:'var(--gradient-primary)'}}>
+              <FaPlay className="text-2xl text-white" />
+            </div>
+            <span className="font-bold text-2xl tracking-tight" style={{color:'var(--text-primary)'}}>Uglix</span>
+          </motion.div>
+
+          {/* Desktop Search */}
+          <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
+            <motion.div 
+              className="relative w-full"
+              whileFocus={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  onSearchChange?.(e.target.value)
+                }}
+                placeholder="Search for movies, series..."
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0 transition-all duration-300"
+                style={{
+                  background:'var(--glass-bg)',
+                  border:'1px solid var(--border-color)',
+                  color:'var(--text-primary)',
+                  backdropFilter:'blur(15px)',
+                  boxShadow:'var(--glass-shadow)'
+                }}
+              />
+            </motion.div>
+          </div>
+
+          {/* Desktop Filters */}
+          <div className="hidden lg:flex items-center gap-3">
+            <motion.button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all duration-300"
+              style={{
+                background:'var(--glass-bg)',
+                border:'1px solid var(--border-color)',
+                color:'var(--text-primary)',
+                backdropFilter:'blur(15px)',
+                boxShadow:'var(--glass-shadow)'
+              }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <FaFilter className="text-lg" />
+              <span className="text-sm font-medium">Filters</span>
+            </motion.button>
+            <ThemeToggle />
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden flex items-center gap-3">
+            <ThemeToggle />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-3 rounded-2xl transition-all duration-300"
+              style={{background:'rgba(255,255,255,0.1)', border:'1px solid var(--border-light)'}}
+            >
+              <FaBars className="text-xl" style={{color:'var(--text-primary)'}} />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Filters Dropdown */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="hidden lg:block absolute top-full left-0 right-0 mt-2 mx-4"
+            >
+              <div className="glass rounded-2xl p-6" style={{
+                background:'var(--bg-dropdown)',
+                border:'1px solid var(--border-color)',
+                backdropFilter:'blur(20px)',
+                boxShadow:'var(--glass-shadow)'
+              }}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Genre Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--text-primary)'}}>
+                      <FaFilter className="text-sm" />
+                      Genre
+                    </label>
+                    <select
+                      value={selectedGenre || ''}
+                      onChange={(e) => onGenreChange?.(e.target.value || '')}
+                      className="w-full px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                      style={{
+                        background:'var(--bg-secondary)',
+                        border:'1px solid var(--border-color)',
+                        color:'var(--text-primary)'
+                      }}
+                    >
+                      <option value="">All Genres</option>
+                      {Array.isArray(genres) && genres.map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Country Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--text-primary)'}}>
+                      <FaGlobe className="text-sm" />
+                      Country
+                    </label>
+                    <select
+                      value={selectedCountry || ''}
+                      onChange={(e) => onCountryChange?.(e.target.value || '')}
+                      className="w-full px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                      style={{
+                        background:'var(--bg-secondary)',
+                        border:'1px solid var(--border-color)',
+                        color:'var(--text-primary)'
+                      }}
+                    >
+                      <option value="">All Countries</option>
+                      {Array.isArray(countries) && countries.map((c, index) => (
+                        <option key={c || index} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Year Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--text-primary)'}}>
+                      <FaCalendarAlt className="text-sm" />
+                      Year
+                    </label>
+                    <select
+                      value={selectedYear || ''}
+                      onChange={(e) => onYearChange?.(e.target.value || '')}
+                      className="w-full px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                      style={{
+                        background:'var(--bg-secondary)',
+                        border:'1px solid var(--border-color)',
+                        color:'var(--text-primary)'
+                      }}
+                    >
+                      <option value="">All Years</option>
+                      {Array.isArray(years) && years.map((y, index) => (
+                        <option key={y || index} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="lg:hidden border-t" style={{borderColor:'var(--border-light)'}}
+            >
+              <div className="py-6 space-y-4">
+                <div className="relative">
+                  <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
+                  <input
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value)
+                      onSearchChange?.(e.target.value)
+                    }}
+                    placeholder="Search movies..."
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0"
+                    style={{
+                      background:'var(--glass-bg)',
+                      border:'1px solid var(--border-color)',
+                      color:'var(--text-primary)',
+                      backdropFilter:'blur(15px)'
+                    }}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="relative">
+                    <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
+                    <select
+                      value={selectedGenre || ''}
+                      onChange={(e) => onGenreChange?.(e.target.value || '')}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0"
+                      style={{
+                        background:'var(--glass-bg)',
+                        border:'1px solid var(--border-color)',
+                        color:'var(--text-primary)',
+                        backdropFilter:'blur(15px)'
+                      }}
+                    >
+                      <option value="">All Genres</option>
+                      {Array.isArray(genres) && genres.map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="relative">
+                    <FaGlobe className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
+                    <select
+                      value={selectedCountry || ''}
+                      onChange={(e) => onCountryChange?.(e.target.value || '')}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0"
+                      style={{
+                        background:'var(--glass-bg)',
+                        border:'1px solid var(--border-color)',
+                        color:'var(--text-primary)',
+                        backdropFilter:'blur(15px)'
+                      }}
+                    >
+                      <option value="">All Countries</option>
+                      {Array.isArray(countries) && countries.map((c, index) => (
+                        <option key={c || index} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="relative">
+                    <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
+                    <select
+                      value={selectedYear || ''}
+                      onChange={(e) => onYearChange?.(e.target.value || '')}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0"
+                      style={{
+                        background:'var(--glass-bg)',
+                        border:'1px solid var(--border-color)',
+                        color:'var(--text-primary)',
+                        backdropFilter:'blur(15px)'
+                      }}
+                    >
+                      <option value="">All Years</option>
+                      {Array.isArray(years) && years.map((y, index) => (
+                        <option key={y || index} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </header>
+  )
+}
+
+
