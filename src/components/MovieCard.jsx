@@ -37,7 +37,7 @@ export default function MovieCard({ movie }) {
         )}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 group-hover:opacity-0 transition-opacity duration-300">
         <h3 className="text-sm font-bold line-clamp-1" style={{color:'var(--text-primary)'}}>{movie.title}</h3>
         {genreName && <p className="text-xs mt-1" style={{color:'var(--text-muted)'}}>{genreName}</p>}
       </div>
