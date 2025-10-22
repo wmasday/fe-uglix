@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { FaPlay, FaSearch, FaFilter, FaBars, FaCalendarAlt, FaGlobe } from 'react-icons/fa'
+import { FaPlay, FaSearch, FaFilter, FaBars, FaCalendarAlt, FaGlobe, FaHome, FaClock, FaStar } from 'react-icons/fa'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
 
 export default function Navbar({ 
@@ -19,10 +20,19 @@ export default function Navbar({
   const [query, setQuery] = useState(search || '')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     setQuery(search || '')
   }, [search])
+
+  const handleSearch = (e) => {
+    e.preventDefault()
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50" style={{
@@ -34,42 +44,109 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-20 flex items-center justify-between">
           {/* Logo */}
-          <motion.div 
-            className="flex items-center gap-3"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="p-3 rounded-2xl ps-4" style={{background:'var(--gradient-primary)'}}>
-              <FaPlay className="text-2xl text-white" />
-            </div>
-            <span className="font-bold text-2xl tracking-tight" style={{color:'var(--text-primary)'}}>Uglix</span>
-          </motion.div>
+          <Link to="/">
+            <motion.div 
+              className="flex items-center gap-3"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="p-3 rounded-2xl ps-4 mx-3" style={{background:'var(--gradient-primary)'}}>
+                <FaPlay className="text-2xl text-white" />
+              </div>
+              {/* <span className="font-bold text-2xl tracking-tight" style={{color:'var(--text-primary)'}}></span> */}
+            </motion.div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-2">
+            <Link to="/">
+              <motion.button
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                  location.pathname === '/' ? 'text-white' : ''
+                }`}
+                style={{
+                  background: location.pathname === '/' ? 'var(--gradient-primary)' : 'var(--glass-bg)',
+                  border: '1px solid var(--border-color)',
+                  color: location.pathname === '/' ? 'white' : 'var(--text-primary)',
+                  backdropFilter: 'blur(15px)',
+                  boxShadow: location.pathname === '/' ? 'var(--glass-shadow)' : 'none'
+                }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaHome className="text-sm" />
+                <span>Home</span>
+              </motion.button>
+            </Link>
+            
+            <Link to="/new-releases">
+              <motion.button
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                  location.pathname === '/new-releases' ? 'text-white' : ''
+                }`}
+                style={{
+                  background: location.pathname === '/new-releases' ? 'var(--gradient-primary)' : 'var(--glass-bg)',
+                  border: '1px solid var(--border-color)',
+                  color: location.pathname === '/new-releases' ? 'white' : 'var(--text-primary)',
+                  backdropFilter: 'blur(15px)',
+                  boxShadow: location.pathname === '/new-releases' ? 'var(--glass-shadow)' : 'none'
+                }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaClock className="text-sm" />
+                <span>New Releases</span>
+              </motion.button>
+            </Link>
+            
+            <Link to="/top-rated">
+              <motion.button
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                  location.pathname === '/top-rated' ? 'text-white' : ''
+                }`}
+                style={{
+                  background: location.pathname === '/top-rated' ? 'var(--gradient-primary)' : 'var(--glass-bg)',
+                  border: '1px solid var(--border-color)',
+                  color: location.pathname === '/top-rated' ? 'white' : 'var(--text-primary)',
+                  backdropFilter: 'blur(15px)',
+                  boxShadow: location.pathname === '/top-rated' ? 'var(--glass-shadow)' : 'none'
+                }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaStar className="text-sm" />
+                <span>Top Rated</span>
+              </motion.button>
+            </Link>
+          </div>
 
           {/* Desktop Search */}
           <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
-            <motion.div 
-              className="relative w-full"
-              whileFocus={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
-              <input
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value)
-                  onSearchChange?.(e.target.value)
-                }}
-                placeholder="Search for movies, series..."
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0 transition-all duration-300"
-                style={{
-                  background:'var(--glass-bg)',
-                  border:'1px solid var(--border-color)',
-                  color:'var(--text-primary)',
-                  backdropFilter:'blur(15px)',
-                  boxShadow:'var(--glass-shadow)'
-                }}
-              />
-            </motion.div>
+            <form onSubmit={handleSearch} className="w-full">
+              <motion.div 
+                className="relative w-full"
+                whileFocus={{ scale: 1.02 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
+                <input
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value)
+                    onSearchChange?.(e.target.value)
+                  }}
+                  placeholder="Search for movies, series..."
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0 transition-all duration-300"
+                  style={{
+                    background:'var(--glass-bg)',
+                    border:'1px solid var(--border-color)',
+                    color:'var(--text-primary)',
+                    backdropFilter:'blur(15px)',
+                    boxShadow:'var(--glass-shadow)'
+                  }}
+                />
+              </motion.div>
+            </form>
           </div>
 
           {/* Desktop Filters */}
@@ -118,48 +195,63 @@ export default function Navbar({
             >
               <div className="glass rounded-2xl p-6" style={{
                 background:'var(--bg-dropdown)',
-                border:'1px solid var(--border-color)',
+                border:'1px solid var(--bg-dropdown-border)',
                 backdropFilter:'blur(20px)',
-                boxShadow:'var(--glass-shadow)'
+                boxShadow:'var(--glass-shadow)',
+                color:'var(--bg-dropdown-text)'
               }}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Genre Filter */}
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--text-primary)'}}>
+                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--bg-dropdown-text)'}}>
                       <FaFilter className="text-sm" />
                       Genre
                     </label>
                     <select
                       value={selectedGenre || ''}
                       onChange={(e) => onGenreChange?.(e.target.value || '')}
-                      className="w-full px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                      className="w-full appearance-none px-3 py-2 pr-10 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
-                        background:'var(--bg-secondary)',
-                        border:'1px solid var(--border-color)',
-                        color:'var(--text-primary)'
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--bg-dropdown-border)',
+                        color: 'var(--bg-dropdown-text)',
+                        backgroundImage:
+                          'url("data:image/svg+xml;utf8,<svg fill=\'%23aaa\' height=\'20\' viewBox=\'0 0 24 24\' width=\'20\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>")',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '1rem',
                       }}
                     >
                       <option value="">All Genres</option>
-                      {Array.isArray(genres) && genres.map((g) => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                      ))}
+                      {Array.isArray(genres) &&
+                        genres.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.name}
+                          </option>
+                        ))}
                     </select>
+
                   </div>
 
                   {/* Country Filter */}
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--text-primary)'}}>
+                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--bg-dropdown-text)'}}>
                       <FaGlobe className="text-sm" />
                       Country
                     </label>
                     <select
-                      value={selectedCountry || ''}
-                      onChange={(e) => onCountryChange?.(e.target.value || '')}
-                      className="w-full px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                      value={selectedGenre || ''}
+                      onChange={(e) => onGenreChange?.(e.target.value || '')}
+                      className="w-full appearance-none px-3 py-2 pr-10 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
-                        background:'var(--bg-secondary)',
-                        border:'1px solid var(--border-color)',
-                        color:'var(--text-primary)'
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--bg-dropdown-border)',
+                        color: 'var(--bg-dropdown-text)',
+                        backgroundImage:
+                          'url("data:image/svg+xml;utf8,<svg fill=\'%23aaa\' height=\'20\' viewBox=\'0 0 24 24\' width=\'20\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>")',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '1rem',
                       }}
                     >
                       <option value="">All Countries</option>
@@ -171,18 +263,23 @@ export default function Navbar({
 
                   {/* Year Filter */}
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--text-primary)'}}>
+                    <label className="text-sm font-semibold flex items-center gap-2" style={{color:'var(--bg-dropdown-text)'}}>
                       <FaCalendarAlt className="text-sm" />
                       Year
                     </label>
                     <select
-                      value={selectedYear || ''}
-                      onChange={(e) => onYearChange?.(e.target.value || '')}
-                      className="w-full px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                      value={selectedGenre || ''}
+                      onChange={(e) => onGenreChange?.(e.target.value || '')}
+                      className="w-full appearance-none px-3 py-2 pr-10 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
-                        background:'var(--bg-secondary)',
-                        border:'1px solid var(--border-color)',
-                        color:'var(--text-primary)'
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--bg-dropdown-border)',
+                        color: 'var(--bg-dropdown-text)',
+                        backgroundImage:
+                          'url("data:image/svg+xml;utf8,<svg fill=\'%23aaa\' height=\'20\' viewBox=\'0 0 24 24\' width=\'20\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>")',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '1rem',
                       }}
                     >
                       <option value="">All Years</option>
@@ -208,24 +305,89 @@ export default function Navbar({
               className="lg:hidden border-t" style={{borderColor:'var(--border-light)'}}
             >
               <div className="py-6 space-y-4">
-                <div className="relative">
-                  <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
-                  <input
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value)
-                      onSearchChange?.(e.target.value)
-                    }}
-                    placeholder="Search movies..."
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0"
-                    style={{
-                      background:'var(--glass-bg)',
-                      border:'1px solid var(--border-color)',
-                      color:'var(--text-primary)',
-                      backdropFilter:'blur(15px)'
-                    }}
-                  />
+                {/* Mobile Navigation */}
+                <div className="flex flex-col gap-2 mb-6">
+                  <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+                    <motion.button
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                        location.pathname === '/' ? 'text-white' : ''
+                      }`}
+                      style={{
+                        background: location.pathname === '/' ? 'var(--gradient-primary)' : 'var(--glass-bg)',
+                        border: '1px solid var(--border-color)',
+                        color: location.pathname === '/' ? 'white' : 'var(--text-primary)',
+                        backdropFilter: 'blur(15px)',
+                        boxShadow: location.pathname === '/' ? 'var(--glass-shadow)' : 'none'
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <FaHome className="text-sm" />
+                      <span>Home</span>
+                    </motion.button>
+                  </Link>
+                  
+                  <Link to="/new-releases" onClick={() => setIsMobileMenuOpen(false)}>
+                    <motion.button
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                        location.pathname === '/new-releases' ? 'text-white' : ''
+                      }`}
+                      style={{
+                        background: location.pathname === '/new-releases' ? 'var(--gradient-primary)' : 'var(--glass-bg)',
+                        border: '1px solid var(--border-color)',
+                        color: location.pathname === '/new-releases' ? 'white' : 'var(--text-primary)',
+                        backdropFilter: 'blur(15px)',
+                        boxShadow: location.pathname === '/new-releases' ? 'var(--glass-shadow)' : 'none'
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <FaClock className="text-sm" />
+                      <span>New Releases</span>
+                    </motion.button>
+                  </Link>
+                  
+                  <Link to="/top-rated" onClick={() => setIsMobileMenuOpen(false)}>
+                    <motion.button
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                        location.pathname === '/top-rated' ? 'text-white' : ''
+                      }`}
+                      style={{
+                        background: location.pathname === '/top-rated' ? 'var(--gradient-primary)' : 'var(--glass-bg)',
+                        border: '1px solid var(--border-color)',
+                        color: location.pathname === '/top-rated' ? 'white' : 'var(--text-primary)',
+                        backdropFilter: 'blur(15px)',
+                        boxShadow: location.pathname === '/top-rated' ? 'var(--glass-shadow)' : 'none'
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <FaStar className="text-sm" />
+                      <span>Top Rated</span>
+                    </motion.button>
+                  </Link>
                 </div>
+
+                <form onSubmit={handleSearch} className="w-full">
+                  <div className="relative">
+                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
+                    <input
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value)
+                        onSearchChange?.(e.target.value)
+                      }}
+                      placeholder="Search movies..."
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-offset-0"
+                      style={{
+                        background:'var(--glass-bg)',
+                        border:'1px solid var(--border-color)',
+                        color:'var(--text-primary)',
+                        backdropFilter:'blur(15px)'
+                      }}
+                    />
+                  </div>
+                </form>
                 
                 <div className="grid grid-cols-1 gap-4">
                   <div className="relative">

@@ -1,19 +1,22 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
+import { FaPlay } from 'react-icons/fa'
 
 export default function MovieCard({ movie }) {
   const genreName = movie.genre?.name || movie.genre_name || ''
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -8, scale: 1.02 }}
-      transition={{ 
-        duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94]
-      }}
-      className="group relative cursor-pointer"
-    >
+    <Link to={`/watch/${movie.id}`}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -8, scale: 1.02 }}
+        transition={{ 
+          duration: 0.4,
+          ease: [0.25, 0.46, 0.45, 0.94]
+        }}
+        className="group relative cursor-pointer"
+      >
       <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl glass"
            style={{
              background:'var(--glass-bg)',
@@ -48,27 +51,45 @@ export default function MovieCard({ movie }) {
              backdropFilter:'blur(2px)'
            }} />
 
-      <motion.div 
-        className="absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 transition-all duration-500"
-        initial={{ y: 20 }}
-        whileHover={{ y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <p className="text-white text-xs line-clamp-3 font-medium leading-relaxed">
-          {movie.description || 'No description available.'}
-        </p>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-xs px-2 py-1 rounded-full" style={{background:'rgba(255,255,255,0.2)'}}>
-            {movie.type || 'Movie'}
-          </span>
-          {movie.rating && (
+        {/* Play Button Overlay */}
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+          initial={{ scale: 0.8 }}
+          whileHover={{ scale: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="p-4 rounded-full"
+            style={{ background: 'var(--gradient-primary)' }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <FaPlay className="text-white text-xl ml-1" />
+          </motion.div>
+        </motion.div>
+
+        <motion.div 
+          className="absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 transition-all duration-500"
+          initial={{ y: 20 }}
+          whileHover={{ y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <p className="text-white text-xs line-clamp-3 font-medium leading-relaxed">
+            {movie.description || 'No description available.'}
+          </p>
+          <div className="mt-2 flex items-center gap-2">
             <span className="text-xs px-2 py-1 rounded-full" style={{background:'rgba(255,255,255,0.2)'}}>
-              ⭐ {movie.rating}
+              {movie.type || 'Movie'}
             </span>
-          )}
-        </div>
+            {movie.rating && (
+              <span className="text-xs px-2 py-1 rounded-full" style={{background:'rgba(255,255,255,0.2)'}}>
+                ⭐ {movie.rating}
+              </span>
+            )}
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </Link>
   )
 }
 
