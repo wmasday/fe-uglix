@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { FaPlay, FaSearch, FaFilter, FaBars, FaCalendarAlt, FaGlobe, FaHome, FaClock, FaStar } from 'react-icons/fa'
+import { FaPlay, FaSearch, FaFilter, FaBars, FaCalendarAlt, FaGlobe, FaHome, FaClock, FaStar, FaUser, FaSignOutAlt, FaCog } from 'react-icons/fa'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import ThemeToggle from './ThemeToggle'
 
 export default function Navbar({ 
@@ -20,8 +21,10 @@ export default function Navbar({
   const [query, setQuery] = useState(search || '')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, isAuthenticated, logout } = useAuth()
 
   useEffect(() => {
     setQuery(search || '')
@@ -32,6 +35,11 @@ export default function Navbar({
     if (query.trim()) {
       navigate(`/search?q=${encodeURIComponent(query.trim())}`)
     }
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
   }
 
   return (
@@ -149,7 +157,7 @@ export default function Navbar({
             </form>
           </div>
 
-          {/* Desktop Filters */}
+          {/* Desktop Filters & User Menu */}
           <div className="hidden lg:flex items-center gap-3">
             <motion.button
               onClick={() => setShowFilters(!showFilters)}
@@ -167,6 +175,71 @@ export default function Navbar({
               <FaFilter className="text-lg" />
               <span className="text-sm font-medium">Filters</span>
             </motion.button>
+            
+            {isAuthenticated ? (
+              <div className="relative">
+                <motion.button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300"
+                  style={{
+                    background:'var(--glass-bg)',
+                    border:'1px solid var(--border-color)',
+                    color:'var(--text-primary)',
+                    backdropFilter:'blur(15px)',
+                    boxShadow:'var(--glass-shadow)'
+                  }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'var(--gradient-primary)', color: 'white' }}>
+                    {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                  </div>
+                  <span className="text-sm font-medium">{user?.full_name || user?.username}</span>
+                </motion.button>
+
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      className="absolute right-0 top-full mt-2 w-48 rounded-2xl p-2"
+                      style={{
+                        background: 'var(--bg-dropdown)',
+                        border: '1px solid var(--bg-dropdown-border)',
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: 'var(--glass-shadow)'
+                      }}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      <Link to="/admin" onClick={() => setShowUserMenu(false)}>
+                        <motion.div
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
+                          style={{ color: 'var(--bg-dropdown-text)' }}
+                          whileHover={{ background: 'var(--glass-bg)' }}
+                        >
+                          <FaCog className="text-sm" />
+                          <span className="text-sm font-medium">Admin Dashboard</span>
+                        </motion.div>
+                      </Link>
+                      <motion.button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
+                        style={{ color: 'var(--danger-color)' }}
+                        whileHover={{ background: 'rgba(239, 68, 68, 0.1)' }}
+                      >
+                        <FaSignOutAlt className="text-sm" />
+                        <span className="text-sm font-medium">Logout</span>
+                      </motion.button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                {/* Login and Register buttons hidden as requested */}
+              </div>
+            )}
+            
             <ThemeToggle />
           </div>
 
@@ -389,6 +462,62 @@ export default function Navbar({
                   </div>
                 </form>
                 
+                {/* Authentication Section */}
+                {isAuthenticated ? (
+                  <div className="mb-6 p-4 rounded-xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)' }}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'var(--gradient-primary)', color: 'white' }}>
+                        {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                      </div>
+                      <div>
+                        <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user?.full_name || user?.username}</p>
+                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Admin User</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)}>
+                        <motion.button
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
+                          style={{
+                            background: 'var(--glass-bg)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)'
+                          }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <FaCog className="text-sm" />
+                          <span className="text-sm font-medium">Admin Dashboard</span>
+                        </motion.button>
+                      </Link>
+                      <motion.button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          color: 'var(--danger-color)'
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <FaSignOutAlt className="text-sm" />
+                        <span className="text-sm font-medium">Logout</span>
+                      </motion.button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-6">
+                    <div className="p-4 rounded-xl text-center" style={{ 
+                      background: 'var(--glass-bg)', 
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      <p className="text-sm">Authentication options are not available</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-4">
                   <div className="relative">
                     <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-lg" style={{color:'var(--text-muted)'}} />
