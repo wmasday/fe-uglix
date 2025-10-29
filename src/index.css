@@ -161,3 +161,8 @@ body {
               border-color var(--transition-normal),
               box-shadow var(--transition-normal);
 }
+
+
+.swal2-actions button {
+  margin: 10px;
+}

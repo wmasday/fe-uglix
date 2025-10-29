@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FaPlus, FaEdit, FaTrash, FaSearch, FaSave, FaTimes, FaPlay, FaClock, FaFilm, FaList
+  FaPlus, FaEdit, FaTrash, FaSearch, FaSave, FaTimes, FaPlay, FaClock, FaFilm, FaList, FaEye, FaEyeSlash
 } from 'react-icons/fa'
 import { 
   fetchEpisodesAdmin, createEpisode, updateEpisode, deleteEpisode, fetchMoviesAdmin 
 } from '../../api'
+import ModernModal from '../ModernModal'
+import FormLabel from '../FormLabel'
+import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
 export default function EpisodesCRUD() {
   const [episodes, setEpisodes] = useState([])
@@ -22,8 +25,8 @@ export default function EpisodesCRUD() {
     description: '',
     episode_number: '',
     season_number: '',
-    duration: '',
-    video_url: '',
+    duration_sec: '',
+    sources_url: '',
     movie_id: ''
   })
 
@@ -75,8 +78,8 @@ export default function EpisodesCRUD() {
         description: '',
         episode_number: '',
         season_number: '',
-        duration: '',
-        video_url: '',
+        duration_sec: '',
+        sources_url: '',
         movie_id: ''
       })
       loadEpisodes()
@@ -94,8 +97,8 @@ export default function EpisodesCRUD() {
       description: episode.description || '',
       episode_number: episode.episode_number,
       season_number: episode.season_number || '',
-      duration: episode.duration || '',
-      video_url: episode.video_url || '',
+      duration_sec: episode.duration_sec || '',
+      sources_url: episode.sources_url || '',
       movie_id: episode.movie_id
     })
     setShowForm(true)
@@ -116,27 +119,36 @@ export default function EpisodesCRUD() {
     <div className="space-y-6">
       {/* Header */}
       <motion.div
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        className="glass rounded-2xl p-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <div>
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Episodes Management
-          </h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Manage episodes and series content
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl" style={{ background: 'var(--gradient-primary)' }}>
+              <FaPlay className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                Episodes Management
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Manage series episodes and content
+              </p>
+            </div>
+          </div>
+          <motion.button
+            onClick={() => setShowForm(true)}
+            className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(99, 102, 241, 0.3)' }}
+            whileTap={{ scale: 0.95 }}
+            style={{ background: 'var(--gradient-primary)' }}
+          >
+            <FaPlus />
+            Add Episode
+          </motion.button>
         </div>
-        <motion.button
-          onClick={() => setShowForm(true)}
-          className="btn-primary flex items-center gap-2 px-4 py-2"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <FaPlus />
-          Add Episode
-        </motion.button>
       </motion.div>
 
       {/* Filters */}
@@ -284,7 +296,7 @@ export default function EpisodesCRUD() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                         <FaClock className="text-xs" />
-                        {episode.duration || 'N/A'} min
+                        {episode.duration_sec ? Math.floor(episode.duration_sec / 60) : 'N/A'} min
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -393,8 +405,8 @@ export default function EpisodesCRUD() {
                       description: '',
                       episode_number: '',
                       season_number: '',
-                      duration: '',
-                      video_url: '',
+                      duration_sec: '',
+                      sources_url: '',
                       movie_id: ''
                     })
                   }}
@@ -491,31 +503,32 @@ export default function EpisodesCRUD() {
 
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Duration (minutes)
+                      Duration (seconds)
                     </label>
                     <input
                       type="number"
                       min="1"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      value={formData.duration_sec}
+                      onChange={(e) => setFormData({ ...formData, duration_sec: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
                         background: 'var(--bg-secondary)',
                         border: '1px solid var(--border-color)',
                         color: 'var(--text-primary)'
                       }}
-                      placeholder="45"
+                      placeholder="2700"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Video URL
+                      Sources URL *
                     </label>
                     <input
                       type="url"
-                      value={formData.video_url}
-                      onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                      required
+                      value={formData.sources_url}
+                      onChange={(e) => setFormData({ ...formData, sources_url: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
                         background: 'var(--bg-secondary)',

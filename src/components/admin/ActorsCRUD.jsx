@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FaPlus, FaEdit, FaTrash, FaSearch, FaSave, FaTimes, FaUser, FaBirthdayCake, FaGlobe, FaFilm
+  FaPlus, FaEdit, FaTrash, FaSearch, FaSave, FaTimes, FaUser, FaBirthdayCake, FaGlobe, FaFilm, FaEye, FaEyeSlash
 } from 'react-icons/fa'
 import { 
   fetchActorsAdmin, createActor, updateActor, deleteActor 
 } from '../../api'
+import ModernModal from '../ModernModal'
+import FormLabel from '../FormLabel'
+import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
 export default function ActorsCRUD() {
   const [actors, setActors] = useState([])
@@ -19,8 +22,8 @@ export default function ActorsCRUD() {
     name: '',
     birth_date: '',
     nationality: '',
-    biography: '',
-    profile_url: ''
+    bio: '',
+    photo_url: ''
   })
 
   useEffect(() => {
@@ -59,8 +62,8 @@ export default function ActorsCRUD() {
         name: '',
         birth_date: '',
         nationality: '',
-        biography: '',
-        profile_url: ''
+        bio: '',
+        photo_url: ''
       })
       loadActors()
     } catch (error) {
@@ -76,8 +79,8 @@ export default function ActorsCRUD() {
       name: actor.name,
       birth_date: actor.birth_date || '',
       nationality: actor.nationality || '',
-      biography: actor.biography || '',
-      profile_url: actor.profile_url || ''
+      bio: actor.bio || '',
+      photo_url: actor.photo_url || ''
     })
     setShowForm(true)
   }
@@ -109,55 +112,65 @@ export default function ActorsCRUD() {
     <div className="space-y-6">
       {/* Header */}
       <motion.div
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        className="glass rounded-2xl p-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <div>
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Actors Management
-          </h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Manage actors and performers
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl" style={{ background: 'var(--gradient-secondary)' }}>
+              <FaUser className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                Actors Management
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Manage cast members and performers
+              </p>
+            </div>
+          </div>
+          <motion.button
+            onClick={() => setShowForm(true)}
+            className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(245, 158, 11, 0.3)' }}
+            whileTap={{ scale: 0.95 }}
+            style={{ background: 'var(--gradient-secondary)' }}
+          >
+            <FaPlus />
+            Add Actor
+          </motion.button>
         </div>
-        <motion.button
-          onClick={() => setShowForm(true)}
-          className="btn-primary flex items-center gap-2 px-4 py-2"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <FaPlus />
-          Add Actor
-        </motion.button>
       </motion.div>
 
       {/* Search */}
       <motion.div
         className="glass rounded-2xl p-6"
-        style={{
-          background: 'var(--glass-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--glass-shadow)'
-        }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="relative">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            placeholder="Search actors..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-primary)'
-            }}
-          />
+        <div className="flex items-center gap-4">
+          <div className="flex-1 relative">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              placeholder="Search actors by name, nationality, or bio..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 rounded-xl border-0 focus:ring-2 focus:ring-offset-0 transition-all duration-300"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)'
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <FaUser />
+            <span>{actors.length} actors</span>
+          </div>
         </div>
       </motion.div>
 
@@ -195,9 +208,9 @@ export default function ActorsCRUD() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
-                    {actor.profile_url ? (
+                    {actor.photo_url ? (
                       <img 
-                        src={actor.profile_url} 
+                        src={actor.photo_url} 
                         alt={actor.name}
                         className="w-full h-full object-cover"
                       />
@@ -259,9 +272,9 @@ export default function ActorsCRUD() {
                 )}
               </div>
 
-              {actor.biography && (
+              {actor.bio && (
                 <p className="text-sm mb-4 line-clamp-3" style={{ color: 'var(--text-secondary)' }}>
-                  {actor.biography}
+                  {actor.bio}
                 </p>
               )}
 
@@ -353,8 +366,8 @@ export default function ActorsCRUD() {
                       name: '',
                       birth_date: '',
                       nationality: '',
-                      biography: '',
-                      profile_url: ''
+                      bio: '',
+                      photo_url: ''
                     })
                   }}
                   className="p-2 rounded-lg"
@@ -424,12 +437,12 @@ export default function ActorsCRUD() {
 
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Profile Image URL
+                      Photo URL
                     </label>
                     <input
                       type="url"
-                      value={formData.profile_url}
-                      onChange={(e) => setFormData({ ...formData, profile_url: e.target.value })}
+                      value={formData.photo_url}
+                      onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
                         background: 'var(--bg-secondary)',
@@ -446,8 +459,8 @@ export default function ActorsCRUD() {
                     Biography
                   </label>
                   <textarea
-                    value={formData.biography}
-                    onChange={(e) => setFormData({ ...formData, biography: e.target.value })}
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     rows={4}
                     className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                     style={{

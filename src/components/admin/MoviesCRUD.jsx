@@ -7,11 +7,17 @@ import {
 import { 
   fetchMoviesAdmin, createMovie, updateMovie, deleteMovie, fetchGenresAdmin 
 } from '../../api'
+import ModernModal from '../ModernModal'
+import ModernToggle from '../ModernToggle'
+import FileUpload from '../FileUpload'
+import FormLabel from '../FormLabel'
+import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
 export default function MoviesCRUD() {
   const [movies, setMovies] = useState([])
   const [genres, setGenres] = useState([])
   const [loading, setLoading] = useState(false)
+  const [genresLoading, setGenresLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [genreFilter, setGenreFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -23,15 +29,16 @@ export default function MoviesCRUD() {
     title: '',
     description: '',
     release_year: '',
-    duration: '',
+    duration_sec: '',
     rating: '',
     country: '',
-    type: 'movie',
+    type: 'Movie',
     is_published: true,
     genre_id: '',
     poster_url: '',
-    trailer_url: ''
+    sources_url: ''
   })
+  const [posterFile, setPosterFile] = useState(null)
 
   useEffect(() => {
     loadMovies()
@@ -58,71 +65,113 @@ export default function MoviesCRUD() {
   }
 
   const loadGenres = async () => {
+    if (genresLoading) return // Prevent multiple simultaneous loads
+    setGenresLoading(true)
     try {
+      console.log('Loading genres...')
       const response = await fetchGenresAdmin({ perPage: 100 })
-      setGenres(response.data || [])
+      console.log('Genres API response:', response)
+      // The API returns genres directly as an array, not wrapped in data
+      const genresData = Array.isArray(response) ? response : (response.data || [])
+      console.log('Setting genres:', genresData)
+      setGenres(genresData)
     } catch (error) {
       console.error('Error loading genres:', error)
+      setGenres([])
+    } finally {
+      setGenresLoading(false)
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    showLoading(editingMovie ? 'Updating movie...' : 'Creating movie...')
+    
     try {
-      if (editingMovie) {
-        await updateMovie(editingMovie.id, formData)
-      } else {
-        await createMovie(formData)
+      const submitData = { ...formData }
+      
+      // Handle file upload if poster file is selected
+      if (posterFile) {
+        // In a real app, you would upload the file to a server
+        // For now, we'll use a placeholder URL
+        submitData.poster_url = URL.createObjectURL(posterFile)
       }
+      
+      if (editingMovie) {
+        await updateMovie(editingMovie.id, submitData)
+        showSuccess('Movie Updated!', 'The movie has been successfully updated.')
+      } else {
+        await createMovie(submitData)
+        showSuccess('Movie Created!', 'The movie has been successfully created.')
+      }
+      
+      closeLoading()
       setShowForm(false)
       setEditingMovie(null)
+      setPosterFile(null)
       setFormData({
         title: '',
         description: '',
         release_year: '',
-        duration: '',
+        duration_sec: '',
         rating: '',
         country: '',
-        type: 'movie',
+        type: 'Movie',
         is_published: true,
         genre_id: '',
         poster_url: '',
-        trailer_url: ''
+        sources_url: ''
       })
       loadMovies()
     } catch (error) {
+      closeLoading()
       console.error('Error saving movie:', error)
+      showError('Error!', error.message || 'Failed to save movie. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const handleEdit = (movie) => {
+    console.log('Editing movie:', movie)
+    console.log('Available genres:', genres)
+    
     setEditingMovie(movie)
     setFormData({
       title: movie.title,
       description: movie.description,
       release_year: movie.release_year,
-      duration: movie.duration,
+      duration_sec: movie.duration_sec,
       rating: movie.rating,
       country: movie.country,
       type: movie.type,
       is_published: movie.is_published,
-      genre_id: movie.genre_id,
+      genre_id: movie.genre_id ? String(movie.genre_id) : '',
       poster_url: movie.poster_url,
-      trailer_url: movie.trailer_url
+      sources_url: movie.sources_url
     })
     setShowForm(true)
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this movie?')) {
+    const result = await showConfirm(
+      'Delete Movie?',
+      'Are you sure you want to delete this movie? This action cannot be undone.',
+      'Yes, delete it!'
+    )
+    
+    if (result.isConfirmed) {
       try {
+        showLoading('Deleting movie...')
         await deleteMovie(id)
+        closeLoading()
+        showSuccess('Movie Deleted!', 'The movie has been successfully deleted.')
         loadMovies()
       } catch (error) {
+        closeLoading()
         console.error('Error deleting movie:', error)
+        showError('Error!', 'Failed to delete movie. Please try again.')
       }
     }
   }
@@ -130,9 +179,14 @@ export default function MoviesCRUD() {
   const togglePublished = async (movie) => {
     try {
       await updateMovie(movie.id, { ...movie, is_published: !movie.is_published })
+      showSuccess(
+        movie.is_published ? 'Movie Unpublished!' : 'Movie Published!',
+        `The movie has been ${movie.is_published ? 'unpublished' : 'published'} successfully.`
+      )
       loadMovies()
     } catch (error) {
       console.error('Error updating movie:', error)
+      showError('Error!', 'Failed to update movie status. Please try again.')
     }
   }
 
@@ -273,8 +327,8 @@ export default function MoviesCRUD() {
                   <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                     Rating
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Status
+                  <th className="px-6 py-4 text-center text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Published
                   </th>
                   <th className="px-6 py-4 text-center text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                     Actions
@@ -313,7 +367,7 @@ export default function MoviesCRUD() {
                           </div>
                           <div className="text-sm flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
                             <FaClock className="text-xs" />
-                            {movie.duration} min
+                            {movie.duration_sec ? Math.floor(movie.duration_sec / 60) : 'N/A'} min
                             <span className="mx-1">•</span>
                             <FaGlobe className="text-xs" />
                             {movie.country}
@@ -342,19 +396,13 @@ export default function MoviesCRUD() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <motion.button
-                        onClick={() => togglePublished(movie)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                          movie.is_published 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {movie.is_published ? <FaEye /> : <FaEyeSlash />}
-                        {movie.is_published ? 'Published' : 'Draft'}
-                      </motion.button>
+                      <div className="flex items-center justify-center">
+                        <ModernToggle
+                          checked={movie.is_published}
+                          onChange={() => togglePublished(movie)}
+                          size="sm"
+                        />
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
@@ -430,62 +478,37 @@ export default function MoviesCRUD() {
       </motion.div>
 
       {/* Movie Form Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="glass rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              style={{
-                background: 'var(--glass-bg)',
-                border: '1px solid var(--border-color)',
-                boxShadow: 'var(--glass-shadow)'
-              }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {editingMovie ? 'Edit Movie' : 'Add New Movie'}
-                </h3>
-                <motion.button
-                  onClick={() => {
-                    setShowForm(false)
-                    setEditingMovie(null)
-                    setFormData({
-                      title: '',
-                      description: '',
-                      release_year: '',
-                      duration: '',
-                      rating: '',
-                      country: '',
-                      type: 'movie',
-                      is_published: true,
-                      genre_id: '',
-                      poster_url: '',
-                      trailer_url: ''
-                    })
-                  }}
-                  className="p-2 rounded-lg"
-                  style={{ color: 'var(--text-secondary)' }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FaTimes />
-                </motion.button>
-              </div>
+      <ModernModal
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false)
+          setEditingMovie(null)
+          setPosterFile(null)
+          setFormData({
+            title: '',
+            description: '',
+            release_year: '',
+            duration_sec: '',
+            rating: '',
+            country: '',
+            type: 'Movie',
+            is_published: true,
+            genre_id: '',
+            poster_url: '',
+            sources_url: ''
+          })
+        }}
+        title={editingMovie ? 'Edit Movie' : 'Add New Movie'}
+        size="lg"
+        loading={loading}
+      >
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Title *
-                    </label>
+                    <FormLabel required>
+                      Title
+                    </FormLabel>
                     <input
                       type="text"
                       required
@@ -501,9 +524,9 @@ export default function MoviesCRUD() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Genre *
-                    </label>
+                    <FormLabel required>
+                      Genre
+                    </FormLabel>
                     <select
                       required
                       value={formData.genre_id}
@@ -515,17 +538,17 @@ export default function MoviesCRUD() {
                         color: 'var(--text-primary)'
                       }}
                     >
-                      <option value="">Select Genre</option>
+                      <option value="">{genresLoading ? 'Loading genres...' : 'Select Genre'}</option>
                       {genres.map(genre => (
-                        <option key={genre.id} value={genre.id}>{genre.name}</option>
+                        <option key={genre.id} value={String(genre.id)}>{genre.name}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Release Year *
-                    </label>
+                    <FormLabel required>
+                      Release Year
+                    </FormLabel>
                     <input
                       type="number"
                       required
@@ -541,13 +564,13 @@ export default function MoviesCRUD() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Duration (minutes)
-                    </label>
+                    <FormLabel>
+                      Duration (seconds)
+                    </FormLabel>
                     <input
                       type="number"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      value={formData.duration_sec}
+                      onChange={(e) => setFormData({ ...formData, duration_sec: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
                         background: 'var(--bg-secondary)',
@@ -558,9 +581,9 @@ export default function MoviesCRUD() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <FormLabel>
                       Rating
-                    </label>
+                    </FormLabel>
                     <input
                       type="number"
                       step="0.1"
@@ -578,9 +601,9 @@ export default function MoviesCRUD() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <FormLabel>
                       Country
-                    </label>
+                    </FormLabel>
                     <input
                       type="text"
                       value={formData.country}
@@ -595,9 +618,9 @@ export default function MoviesCRUD() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <FormLabel>
                       Type
-                    </label>
+                    </FormLabel>
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value })}
@@ -608,31 +631,25 @@ export default function MoviesCRUD() {
                         color: 'var(--text-primary)'
                       }}
                     >
-                      <option value="movie">Movie</option>
-                      <option value="series">Series</option>
+                      <option value="Movie">Movie</option>
+                      <option value="Series">Series</option>
                     </select>
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.is_published}
-                        onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
-                        className="w-4 h-4 rounded"
-                        style={{ accentColor: 'var(--primary-color)' }}
-                      />
-                      <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                        Published
-                      </span>
-                    </label>
+                    <ModernToggle
+                      checked={formData.is_published}
+                      onChange={(checked) => setFormData({ ...formData, is_published: checked })}
+                      label="Published"
+                      size="md"
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  <FormLabel>
                     Description
-                  </label>
+                  </FormLabel>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -648,36 +665,31 @@ export default function MoviesCRUD() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Poster URL
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.poster_url}
-                      onChange={(e) => setFormData({ ...formData, poster_url: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
+                    <FileUpload
+                      onFileSelect={setPosterFile}
+                      accept="image/*"
+                      maxSize={5 * 1024 * 1024}
+                      label="Movie Poster"
+                      preview={true}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Trailer URL
-                    </label>
+                    <FormLabel required>
+                      Sources URL
+                    </FormLabel>
                     <input
                       type="url"
-                      value={formData.trailer_url}
-                      onChange={(e) => setFormData({ ...formData, trailer_url: e.target.value })}
+                      required
+                      value={formData.sources_url}
+                      onChange={(e) => setFormData({ ...formData, sources_url: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
                         background: 'var(--bg-secondary)',
                         border: '1px solid var(--border-color)',
                         color: 'var(--text-primary)'
                       }}
+                      placeholder="https://example.com/video.mp4"
                     />
                   </div>
                 </div>
@@ -688,13 +700,15 @@ export default function MoviesCRUD() {
                     onClick={() => {
                       setShowForm(false)
                       setEditingMovie(null)
+                      setPosterFile(null)
                     }}
-                    className="px-6 py-3 rounded-xl font-medium"
+                    className="px-6 py-3 rounded-xl font-medium transition-all duration-200"
                     style={{
                       background: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)'
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)'
                     }}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     Cancel
@@ -702,8 +716,13 @@ export default function MoviesCRUD() {
                   <motion.button
                     type="submit"
                     disabled={loading}
-                    className="btn-primary flex items-center gap-2 px-6 py-3"
-                    whileHover={{ scale: loading ? 1 : 1.02 }}
+                    className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200"
+                    style={{
+                      background: 'var(--gradient-primary)',
+                      color: 'white',
+                      boxShadow: 'var(--glass-shadow)'
+                    }}
+                    whileHover={{ scale: loading ? 1 : 1.02, y: -2 }}
                     whileTap={{ scale: loading ? 1 : 0.98 }}
                   >
                     {loading ? (
@@ -721,10 +740,7 @@ export default function MoviesCRUD() {
                   </motion.button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </ModernModal>
     </div>
   )
 }

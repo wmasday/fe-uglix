@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FaPlus, FaEdit, FaTrash, FaSearch, FaSave, FaTimes, FaUser, FaFilm, FaStar, FaUsers
+  FaPlus, FaEdit, FaTrash, FaSearch, FaSave, FaTimes, FaUser, FaFilm, FaStar, FaUsers, FaEye, FaEyeSlash
 } from 'react-icons/fa'
 import { 
   fetchMovieCastsAdmin, createMovieCast, updateMovieCast, deleteMovieCast,
   fetchMoviesAdmin, fetchActorsAdmin 
 } from '../../api'
+import ModernModal from '../ModernModal'
+import FormLabel from '../FormLabel'
+import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
 export default function MovieCastsCRUD() {
   const [movieCasts, setMovieCasts] = useState([])
@@ -23,8 +26,7 @@ export default function MovieCastsCRUD() {
   const [formData, setFormData] = useState({
     movie_id: '',
     actor_id: '',
-    character_name: '',
-    role_type: 'main'
+    role_name: ''
   })
 
   useEffect(() => {
@@ -84,8 +86,7 @@ export default function MovieCastsCRUD() {
       setFormData({
         movie_id: '',
         actor_id: '',
-        character_name: '',
-        role_type: 'main'
+        role_name: ''
       })
       loadMovieCasts()
     } catch (error) {
@@ -100,8 +101,7 @@ export default function MovieCastsCRUD() {
     setFormData({
       movie_id: movieCast.movie_id,
       actor_id: movieCast.actor_id,
-      character_name: movieCast.character_name,
-      role_type: movieCast.role_type
+      role_name: movieCast.role_name
     })
     setShowForm(true)
   }
@@ -117,40 +117,41 @@ export default function MovieCastsCRUD() {
     }
   }
 
-  const getRoleTypeColor = (roleType) => {
-    switch (roleType) {
-      case 'main': return 'bg-blue-100 text-blue-800'
-      case 'supporting': return 'bg-green-100 text-green-800'
-      case 'cameo': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <motion.div
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        className="glass rounded-2xl p-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <div>
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Movie Casts Management
-          </h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Manage cast members and their roles
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl" style={{ background: 'var(--gradient-dark)' }}>
+              <FaUsers className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                Movie Casts Management
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Manage cast members and their roles
+              </p>
+            </div>
+          </div>
+          <motion.button
+            onClick={() => setShowForm(true)}
+            className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(30, 41, 59, 0.3)' }}
+            whileTap={{ scale: 0.95 }}
+            style={{ background: 'var(--gradient-dark)' }}
+          >
+            <FaPlus />
+            Add Cast Member
+          </motion.button>
         </div>
-        <motion.button
-          onClick={() => setShowForm(true)}
-          className="btn-primary flex items-center gap-2 px-4 py-2"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <FaPlus />
-          Add Cast Member
-        </motion.button>
       </motion.div>
 
       {/* Filters */}
@@ -259,10 +260,10 @@ export default function MovieCastsCRUD() {
                     Movie
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Character
+                    Role
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Role Type
+                    Type
                   </th>
                   <th className="px-6 py-4 text-center text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                     Actions
@@ -315,12 +316,12 @@ export default function MovieCastsCRUD() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                        {movieCast.character_name || 'N/A'}
+                        {movieCast.role_name || 'N/A'}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleTypeColor(movieCast.role_type)}`}>
-                        {movieCast.role_type || 'main'}
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Cast Member
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -427,8 +428,7 @@ export default function MovieCastsCRUD() {
                     setFormData({
                       movie_id: '',
                       actor_id: '',
-                      character_name: '',
-                      role_type: 'main'
+                      role_name: ''
                     })
                   }}
                   className="p-2 rounded-lg"
@@ -488,13 +488,13 @@ export default function MovieCastsCRUD() {
 
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Character Name *
+                      Role Name *
                     </label>
                     <input
                       type="text"
                       required
-                      value={formData.character_name}
-                      onChange={(e) => setFormData({ ...formData, character_name: e.target.value })}
+                      value={formData.role_name}
+                      onChange={(e) => setFormData({ ...formData, role_name: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
                       style={{
                         background: 'var(--bg-secondary)',
@@ -503,27 +503,6 @@ export default function MovieCastsCRUD() {
                       }}
                       placeholder="e.g., Tony Stark, Captain America"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Role Type *
-                    </label>
-                    <select
-                      required
-                      value={formData.role_type}
-                      onChange={(e) => setFormData({ ...formData, role_type: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                    >
-                      <option value="main">Main Character</option>
-                      <option value="supporting">Supporting Character</option>
-                      <option value="cameo">Cameo</option>
-                    </select>
                   </div>
                 </div>
 
