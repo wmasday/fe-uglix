@@ -398,157 +398,105 @@ export default function MovieCastsCRUD() {
       </motion.div>
 
       {/* Movie Cast Form Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="glass rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              style={{
-                background: 'var(--glass-bg)',
-                border: '1px solid var(--border-color)',
-                boxShadow: 'var(--glass-shadow)'
+      <ModernModal
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false);
+          setEditingMovieCast(null);
+          setFormData({ movie_id: '', actor_id: '', role_name: '' });
+        }}
+        title={editingMovieCast ? 'Edit Cast Member' : 'Add New Cast Member'}
+        size="lg"
+        loading={loading}
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Movie *
+              </label>
+              <select
+                required
+                value={formData.movie_id}
+                onChange={e => setFormData({ ...formData, movie_id: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                <option value="">Select Movie</option>
+                {movies.map(movie => (
+                  <option key={movie.id} value={movie.id}>{movie.title}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Actor *
+              </label>
+              <select
+                required
+                value={formData.actor_id}
+                onChange={e => setFormData({ ...formData, actor_id: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                <option value="">Select Actor</option>
+                {actors.map(actor => (
+                  <option key={actor.id} value={actor.id}>{actor.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Role Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.role_name}
+                onChange={e => setFormData({ ...formData, role_name: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                placeholder="e.g., Tony Stark, Captain America"
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-4">
+            <motion.button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setEditingMovieCast(null);
               }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              className="px-6 py-3 rounded-xl font-medium"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {editingMovieCast ? 'Edit Cast Member' : 'Add New Cast Member'}
-                </h3>
-                <motion.button
-                  onClick={() => {
-                    setShowForm(false)
-                    setEditingMovieCast(null)
-                    setFormData({
-                      movie_id: '',
-                      actor_id: '',
-                      role_name: ''
-                    })
-                  }}
-                  className="p-2 rounded-lg"
-                  style={{ color: 'var(--text-secondary)' }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FaTimes />
-                </motion.button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Movie *
-                    </label>
-                    <select
-                      required
-                      value={formData.movie_id}
-                      onChange={(e) => setFormData({ ...formData, movie_id: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                    >
-                      <option value="">Select Movie</option>
-                      {movies.map(movie => (
-                        <option key={movie.id} value={movie.id}>{movie.title}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Actor *
-                    </label>
-                    <select
-                      required
-                      value={formData.actor_id}
-                      onChange={(e) => setFormData({ ...formData, actor_id: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                    >
-                      <option value="">Select Actor</option>
-                      {actors.map(actor => (
-                        <option key={actor.id} value={actor.id}>{actor.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Role Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.role_name}
-                      onChange={(e) => setFormData({ ...formData, role_name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="e.g., Tony Stark, Captain America"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-4">
-                  <motion.button
-                    type="button"
-                    onClick={() => {
-                      setShowForm(false)
-                      setEditingMovieCast(null)
-                    }}
-                    className="px-6 py-3 rounded-xl font-medium"
-                    style={{
-                      background: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)'
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary flex items-center gap-2 px-6 py-3"
-                    whileHover={{ scale: loading ? 1 : 1.02 }}
-                    whileTap={{ scale: loading ? 1 : 0.98 }}
-                  >
-                    {loading ? (
-                      <motion.div
-                        className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                    ) : (
-                      <>
-                        <FaSave />
-                        {editingMovieCast ? 'Update Cast Member' : 'Create Cast Member'}
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Cancel
+            </motion.button>
+            <motion.button
+              type="submit"
+              disabled={loading}
+              className="btn-primary flex items-center gap-2 px-6 py-3"
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+            >
+              {loading ? (
+                <motion.div
+                  className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+              ) : (
+                <>
+                  <FaSave />
+                  {editingMovieCast ? 'Update Cast Member' : 'Create Cast Member'}
+                </>
+              )}
+            </motion.button>
+          </div>
+        </form>
+      </ModernModal>
     </div>
   )
 }

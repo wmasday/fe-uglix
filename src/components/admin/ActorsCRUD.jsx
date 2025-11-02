@@ -9,6 +9,7 @@ import {
 import ModernModal from '../ModernModal'
 import FormLabel from '../FormLabel'
 import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
+import FileUpload from '../FileUpload';
 
 export default function ActorsCRUD() {
   const [actors, setActors] = useState([])
@@ -25,6 +26,7 @@ export default function ActorsCRUD() {
     bio: '',
     photo_url: ''
   })
+  const [photoFile, setPhotoFile] = useState(null);
 
   useEffect(() => {
     loadActors()
@@ -48,30 +50,42 @@ export default function ActorsCRUD() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
     try {
-      if (editingActor) {
-        await updateActor(editingActor.id, formData)
+      let result;
+      if (photoFile) {
+        // With photo upload
+        const form = new FormData();
+        form.append('name', formData.name);
+        form.append('birth_date', formData.birth_date);
+        form.append('nationality', formData.nationality);
+        form.append('bio', formData.bio);
+        if (photoFile) form.append('photo', photoFile);
+        if (editingActor) {
+          result = await updateActor(editingActor.id, form, true);
+        } else {
+          result = await createActor(form, true);
+        }
       } else {
-        await createActor(formData)
+        // Only photo_url as string
+        if (editingActor) {
+          result = await updateActor(editingActor.id, formData);
+        } else {
+          result = await createActor(formData);
+        }
       }
-      setShowForm(false)
-      setEditingActor(null)
-      setFormData({
-        name: '',
-        birth_date: '',
-        nationality: '',
-        bio: '',
-        photo_url: ''
-      })
-      loadActors()
+      setShowForm(false);
+      setEditingActor(null);
+      setFormData({ name: '', birth_date: '', nationality: '', bio: '', photo_url: '' });
+      setPhotoFile(null);
+      loadActors();
     } catch (error) {
-      console.error('Error saving actor:', error)
+      console.error('Error saving actor:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleEdit = (actor) => {
     setEditingActor(actor)
@@ -82,6 +96,7 @@ export default function ActorsCRUD() {
       bio: actor.bio || '',
       photo_url: actor.photo_url || ''
     })
+    setPhotoFile(null); // Clear photo file when editing
     setShowForm(true)
   }
 
@@ -335,186 +350,133 @@ export default function ActorsCRUD() {
       )}
 
       {/* Actor Form Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="glass rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              style={{
-                background: 'var(--glass-bg)',
-                border: '1px solid var(--border-color)',
-                boxShadow: 'var(--glass-shadow)'
-              }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {editingActor ? 'Edit Actor' : 'Add New Actor'}
-                </h3>
-                <motion.button
-                  onClick={() => {
-                    setShowForm(false)
-                    setEditingActor(null)
-                    setFormData({
-                      name: '',
-                      birth_date: '',
-                      nationality: '',
-                      bio: '',
-                      photo_url: ''
-                    })
-                  }}
-                  className="p-2 rounded-lg"
-                  style={{ color: 'var(--text-secondary)' }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FaTimes />
-                </motion.button>
+      <ModernModal
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false);
+          setEditingActor(null);
+          setPhotoFile(null);
+          setFormData({ name: '', birth_date: '', nationality: '', bio: '', photo_url: '' });
+        }}
+        title={editingActor ? 'Edit Actor' : 'Add New Actor'}
+        size="lg"
+        loading={loading}
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Actor Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                placeholder="e.g., Tom Hanks"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Birth Date
+              </label>
+              <input
+                type="date"
+                value={formData.birth_date}
+                onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                Nationality
+              </label>
+              <input
+                type="text"
+                value={formData.nationality}
+                onChange={e => setFormData({ ...formData, nationality: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                placeholder="e.g., American, British"
+              />
+            </div>
+            <div>
+              <FileUpload
+                label="Photo (optional)"
+                onFileSelect={setPhotoFile}
+                accept="image/*"
+                maxSize={5 * 1024 * 1024}
+                preview={true}
+              />
+              <div className="flex items-center mt-2 space-x-2">
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>or use URL:</span>
+                <input
+                  type="url"
+                  value={formData.photo_url}
+                  onChange={e => setFormData({ ...formData, photo_url: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border-0"
+                  placeholder="https://example.com/image.jpg"
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                  disabled={photoFile !== null}
+                />
               </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Actor Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="e.g., Tom Hanks"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Birth Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.birth_date}
-                      onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Nationality
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.nationality}
-                      onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="e.g., American, British"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Photo URL
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.photo_url}
-                      onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    Biography
-                  </label>
-                  <textarea
-                    value={formData.bio}
-                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                    style={{
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-primary)'
-                    }}
-                    placeholder="Brief biography of the actor..."
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-4">
-                  <motion.button
-                    type="button"
-                    onClick={() => {
-                      setShowForm(false)
-                      setEditingActor(null)
-                    }}
-                    className="px-6 py-3 rounded-xl font-medium"
-                    style={{
-                      background: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)'
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary flex items-center gap-2 px-6 py-3"
-                    whileHover={{ scale: loading ? 1 : 1.02 }}
-                    whileTap={{ scale: loading ? 1 : 0.98 }}
-                  >
-                    {loading ? (
-                      <motion.div
-                        className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                    ) : (
-                      <>
-                        <FaSave />
-                        {editingActor ? 'Update Actor' : 'Create Actor'}
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Biography
+            </label>
+            <textarea
+              value={formData.bio}
+              onChange={e => setFormData({ ...formData, bio: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+              placeholder="Brief biography of the actor..."
+            />
+          </div>
+          <div className="flex items-center justify-end gap-4">
+            <motion.button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setEditingActor(null);
+                setPhotoFile(null);
+              }}
+              className="px-6 py-3 rounded-xl font-medium"
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              type="submit"
+              disabled={loading}
+              className="btn-primary flex items-center gap-2 px-6 py-3"
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+            >
+              {loading ? (
+                <motion.div
+                  className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+              ) : (
+                <>
+                  <FaSave />
+                  {editingActor ? 'Update Actor' : 'Create Actor'}
+                </>
+              )}
+            </motion.button>
+          </div>
+        </form>
+      </ModernModal>
+      {/* END MODAL */}
     </div>
   )
 }

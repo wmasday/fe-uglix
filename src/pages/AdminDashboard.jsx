@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaCog,
@@ -24,19 +24,45 @@ import GenresCRUD from "../components/admin/GenresCRUD";
 import ActorsCRUD from "../components/admin/ActorsCRUD";
 import EpisodesCRUD from "../components/admin/EpisodesCRUD";
 import MovieCastsCRUD from "../components/admin/MovieCastsCRUD";
+import { fetchMoviesAdmin, fetchGenresAdmin } from '../api';
+import { fetchActorsAdmin } from '../api';
+import { fetchEpisodesAdmin } from '../api';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("movies");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  // Dynamic counts
+  const [counts, setCounts] = useState({ movies: 0, genres: 0, actors: 0, episodes: 0, "movie-casts": 0 });
+
+  useEffect(() => {
+    async function fetchAllCounts() {
+      // Movies
+      const movies = await fetchMoviesAdmin({ perPage: 1 });
+      // Genres
+      const genres = await fetchGenresAdmin({ perPage: 1 });
+      // Actors
+      const actors = await fetchActorsAdmin({ perPage: 1 });
+      // Episodes
+      const episodes = await fetchEpisodesAdmin({ perPage: 1 });
+      setCounts({
+        movies: movies.total || 0,
+        genres: genres.total || 0,
+        actors: actors.total || 0,
+        episodes: episodes.total || 0,
+        "movie-casts": 0 // TODO: fetch movie casts count if/when backend supports it
+      });
+    }
+    fetchAllCounts();
+  }, []);
 
   const tabs = [
-    { id: "movies", label: "Movies", icon: FaFilm, count: 8 },
-    { id: "genres", label: "Genres", icon: FaTag, count: 4 },
-    { id: "actors", label: "Actors", icon: FaUser, count: 2 },
-    { id: "episodes", label: "Episodes", icon: FaList, count: 2 },
-    { id: "movie-casts", label: "Movie Casts", icon: FaUsers, count: 2 },
+    { id: "movies", label: "Movies", icon: FaFilm, count: counts.movies },
+    { id: "genres", label: "Genres", icon: FaTag, count: counts.genres },
+    { id: "actors", label: "Actors", icon: FaUser, count: counts.actors },
+    { id: "episodes", label: "Episodes", icon: FaList, count: counts.episodes },
+    { id: "movie-casts", label: "Movie Casts", icon: FaUsers, count: counts["movie-casts"] },
   ];
 
   const handleLogout = () => {

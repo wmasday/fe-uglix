@@ -562,6 +562,7 @@ export async function updateMovieCast(id, movieCastData) {
 }
 
 export async function deleteMovieCast(id) {
+    console.log('Deleting movie cast with id:', id);
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/movie-casts/${id}`, {
         method: 'DELETE',
