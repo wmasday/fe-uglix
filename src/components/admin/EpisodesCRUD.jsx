@@ -10,7 +10,7 @@ import ModernModal from '../ModernModal'
 import FormLabel from '../FormLabel'
 import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
-export default function EpisodesCRUD() {
+export default function EpisodesCRUD({ onDataChange }) {
   const [episodes, setEpisodes] = useState([])
   const [movies, setMovies] = useState([])
   const [loading, setLoading] = useState(false)
@@ -56,7 +56,9 @@ export default function EpisodesCRUD() {
   const loadMovies = async () => {
     try {
       const response = await fetchMoviesAdmin({ perPage: 100 })
-      setMovies(response.data || [])
+      // Filter to only show Series (type = 'Series')
+      const seriesOnly = (response.data || []).filter(movie => movie.type === 'Series')
+      setMovies(seriesOnly)
     } catch (error) {
       console.error('Error loading movies:', error)
     }
@@ -83,6 +85,7 @@ export default function EpisodesCRUD() {
         movie_id: ''
       })
       loadEpisodes()
+      if (onDataChange) onDataChange() // Refresh counts in dashboard
     } catch (error) {
       console.error('Error saving episode:', error)
     } finally {
@@ -109,6 +112,7 @@ export default function EpisodesCRUD() {
       try {
         await deleteEpisode(id)
         loadEpisodes()
+        if (onDataChange) onDataChange() // Refresh counts in dashboard
       } catch (error) {
         console.error('Error deleting episode:', error)
       }
@@ -373,234 +377,220 @@ export default function EpisodesCRUD() {
       </motion.div>
 
       {/* Episode Form Modal */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="glass rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      <ModernModal
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false)
+          setEditingEpisode(null)
+          setFormData({
+            title: '',
+            description: '',
+            episode_number: '',
+            season_number: '',
+            duration_sec: '',
+            sources_url: '',
+            movie_id: ''
+          })
+        }}
+        title={editingEpisode ? 'Edit Episode' : 'Add New Episode'}
+        size="lg"
+        loading={loading}
+      >
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <FormLabel required>
+                Episode Title
+              </FormLabel>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+                placeholder="e.g., The Pilot"
+              />
+            </div>
+
+            <div>
+              <FormLabel required>
+                Series
+              </FormLabel>
+              <select
+                required
+                value={formData.movie_id}
+                onChange={(e) => setFormData({ ...formData, movie_id: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                <option value="">Select Series</option>
+                {movies.map(movie => (
+                  <option key={movie.id} value={movie.id}>{movie.title}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <FormLabel>
+                Season Number
+              </FormLabel>
+              <input
+                type="number"
+                min="1"
+                value={formData.season_number}
+                onChange={(e) => setFormData({ ...formData, season_number: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+                placeholder="1"
+              />
+            </div>
+
+            <div>
+              <FormLabel required>
+                Episode Number
+              </FormLabel>
+              <input
+                type="number"
+                required
+                min="1"
+                value={formData.episode_number}
+                onChange={(e) => setFormData({ ...formData, episode_number: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+                placeholder="1"
+              />
+            </div>
+
+            <div>
+              <FormLabel>
+                Duration (seconds)
+              </FormLabel>
+              <input
+                type="number"
+                min="1"
+                value={formData.duration_sec}
+                onChange={(e) => setFormData({ ...formData, duration_sec: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+                placeholder="2700"
+              />
+            </div>
+
+            <div>
+              <FormLabel required>
+                Sources URL
+              </FormLabel>
+              <input
+                type="url"
+                required
+                value={formData.sources_url}
+                onChange={(e) => setFormData({ ...formData, sources_url: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+                placeholder="https://example.com/video.mp4"
+              />
+            </div>
+                </div>
+
+          <div>
+            <FormLabel>
+              Description
+            </FormLabel>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
               style={{
-                background: 'var(--glass-bg)',
+                background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)'
+              }}
+              placeholder="Episode description..."
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-4">
+            <motion.button
+              type="button"
+              onClick={() => {
+                setShowForm(false)
+                setEditingEpisode(null)
+                setFormData({
+                  title: '',
+                  description: '',
+                  episode_number: '',
+                  season_number: '',
+                  duration_sec: '',
+                  sources_url: '',
+                  movie_id: ''
+                })
+              }}
+              className="px-6 py-3 rounded-xl font-medium transition-all duration-200"
+              style={{ 
+                background: 'var(--bg-secondary)', 
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)'
+              }}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              type="submit"
+              disabled={loading}
+              className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200"
+              style={{
+                background: 'var(--gradient-primary)',
+                color: 'white',
                 boxShadow: 'var(--glass-shadow)'
               }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              whileHover={{ scale: loading ? 1 : 1.02, y: -2 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {editingEpisode ? 'Edit Episode' : 'Add New Episode'}
-                </h3>
-                <motion.button
-                  onClick={() => {
-                    setShowForm(false)
-                    setEditingEpisode(null)
-                    setFormData({
-                      title: '',
-                      description: '',
-                      episode_number: '',
-                      season_number: '',
-                      duration_sec: '',
-                      sources_url: '',
-                      movie_id: ''
-                    })
-                  }}
-                  className="p-2 rounded-lg"
-                  style={{ color: 'var(--text-secondary)' }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FaTimes />
-                </motion.button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Episode Title *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="e.g., The Pilot"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Series *
-                    </label>
-                    <select
-                      required
-                      value={formData.movie_id}
-                      onChange={(e) => setFormData({ ...formData, movie_id: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                    >
-                      <option value="">Select Series</option>
-                      {movies.map(movie => (
-                        <option key={movie.id} value={movie.id}>{movie.title}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Season Number
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.season_number}
-                      onChange={(e) => setFormData({ ...formData, season_number: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="1"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Episode Number *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={formData.episode_number}
-                      onChange={(e) => setFormData({ ...formData, episode_number: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="1"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Duration (seconds)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.duration_sec}
-                      onChange={(e) => setFormData({ ...formData, duration_sec: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="2700"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Sources URL *
-                    </label>
-                    <input
-                      type="url"
-                      required
-                      value={formData.sources_url}
-                      onChange={(e) => setFormData({ ...formData, sources_url: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                      style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)'
-                      }}
-                      placeholder="https://example.com/video.mp4"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                    style={{
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-primary)'
-                    }}
-                    placeholder="Episode description..."
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-4">
-                  <motion.button
-                    type="button"
-                    onClick={() => {
-                      setShowForm(false)
-                      setEditingEpisode(null)
-                    }}
-                    className="px-6 py-3 rounded-xl font-medium"
-                    style={{
-                      background: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)'
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary flex items-center gap-2 px-6 py-3"
-                    whileHover={{ scale: loading ? 1 : 1.02 }}
-                    whileTap={{ scale: loading ? 1 : 0.98 }}
-                  >
-                    {loading ? (
-                      <motion.div
-                        className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                    ) : (
-                      <>
-                        <FaSave />
-                        {editingEpisode ? 'Update Episode' : 'Create Episode'}
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {loading ? (
+                <motion.div
+                  className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+              ) : (
+                <>
+                  <FaSave />
+                  {editingEpisode ? 'Update Episode' : 'Create Episode'}
+                </>
+              )}
+            </motion.button>
+          </div>
+        </form>
+      </ModernModal>
     </div>
   )
 }

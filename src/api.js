@@ -196,7 +196,10 @@ export async function fetchMoviesAdmin({ page = 1, perPage = 20, search = '', ge
     params.set('per_page', perPage);
     if (search) params.set('search', search);
     if (genreId) params.set('genre_id', genreId);
-    if (status) params.set('status', status);
+    // Only add status param if it's not empty, so backend shows all movies when no filter
+    if (status && status.trim() !== '') {
+        params.set('status', status);
+    }
 
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/movies?${params.toString()}`, {
@@ -210,16 +213,21 @@ export async function fetchMoviesAdmin({ page = 1, perPage = 20, search = '', ge
     return await res.json();
 }
 
-export async function createMovie(movieData) {
+export async function createMovie(movieData, isFormData = false) {
     const token = localStorage.getItem('token');
+    const headers = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+    
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch('/api/movies', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(movieData)
+        headers,
+        body: isFormData ? movieData : JSON.stringify(movieData)
     });
     if (!res.ok) {
         const error = await res.json();
@@ -228,16 +236,21 @@ export async function createMovie(movieData) {
     return await res.json();
 }
 
-export async function updateMovie(id, movieData) {
+export async function updateMovie(id, movieData, isFormData = false) {
     const token = localStorage.getItem('token');
+    const headers = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+    
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch(`/api/movies/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(movieData)
+        headers,
+        body: isFormData ? movieData : JSON.stringify(movieData)
     });
     if (!res.ok) {
         const error = await res.json();
@@ -380,16 +393,21 @@ export async function fetchActorsAdmin({ page = 1, perPage = 20, search = '' } =
     return await res.json();
 }
 
-export async function createActor(actorData) {
+export async function createActor(actorData, isFormData = false) {
     const token = localStorage.getItem('token');
+    const headers = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+    
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch('/api/actors', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(actorData)
+        headers,
+        body: isFormData ? actorData : JSON.stringify(actorData)
     });
     if (!res.ok) {
         const error = await res.json();
@@ -398,16 +416,21 @@ export async function createActor(actorData) {
     return await res.json();
 }
 
-export async function updateActor(id, actorData) {
+export async function updateActor(id, actorData, isFormData = false) {
     const token = localStorage.getItem('token');
+    const headers = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+    
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch(`/api/actors/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(actorData)
+        headers,
+        body: isFormData ? actorData : JSON.stringify(actorData)
     });
     if (!res.ok) {
         const error = await res.json();
@@ -543,9 +566,9 @@ export async function createMovieCast(movieCastData) {
     return await res.json();
 }
 
-export async function updateMovieCast(id, movieCastData) {
+export async function updateMovieCast(movieId, actorId, movieCastData) {
     const token = localStorage.getItem('token');
-    const res = await fetch(`/api/movie-casts/${id}`, {
+    const res = await fetch(`/api/movie-casts/${movieId}/${actorId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -561,10 +584,9 @@ export async function updateMovieCast(id, movieCastData) {
     return await res.json();
 }
 
-export async function deleteMovieCast(id) {
-    console.log('Deleting movie cast with id:', id);
+export async function deleteMovieCast(movieId, actorId) {
     const token = localStorage.getItem('token');
-    const res = await fetch(`/api/movie-casts/${id}`, {
+    const res = await fetch(`/api/movie-casts/${movieId}/${actorId}`, {
         method: 'DELETE',
         headers: {
             'Accept': 'application/json',

@@ -11,7 +11,7 @@ import ModernModal from '../ModernModal'
 import FormLabel from '../FormLabel'
 import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
-export default function MovieCastsCRUD() {
+export default function MovieCastsCRUD({ onDataChange }) {
   const [movieCasts, setMovieCasts] = useState([])
   const [movies, setMovies] = useState([])
   const [actors, setActors] = useState([])
@@ -30,9 +30,12 @@ export default function MovieCastsCRUD() {
   })
 
   useEffect(() => {
-    loadMovieCasts()
     loadMovies()
     loadActors()
+  }, [])
+
+  useEffect(() => {
+    loadMovieCasts()
   }, [currentPage, search, movieFilter, actorFilter])
 
   const loadMovieCasts = async () => {
@@ -75,12 +78,17 @@ export default function MovieCastsCRUD() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    showLoading(editingMovieCast ? 'Updating cast member...' : 'Creating cast member...')
+    
     try {
       if (editingMovieCast) {
-        await updateMovieCast(editingMovieCast.id, formData)
+        await updateMovieCast(editingMovieCast.movie_id, editingMovieCast.actor_id, formData)
+        showSuccess('Cast Updated!', 'The cast member has been successfully updated.')
       } else {
         await createMovieCast(formData)
+        showSuccess('Cast Created!', 'The cast member has been successfully created.')
       }
+      closeLoading()
       setShowForm(false)
       setEditingMovieCast(null)
       setFormData({
@@ -89,8 +97,11 @@ export default function MovieCastsCRUD() {
         role_name: ''
       })
       loadMovieCasts()
+      if (onDataChange) onDataChange() // Refresh counts in dashboard
     } catch (error) {
+      closeLoading()
       console.error('Error saving movie cast:', error)
+      showError('Error!', error.message || 'Failed to save cast member. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -99,20 +110,32 @@ export default function MovieCastsCRUD() {
   const handleEdit = (movieCast) => {
     setEditingMovieCast(movieCast)
     setFormData({
-      movie_id: movieCast.movie_id,
-      actor_id: movieCast.actor_id,
-      role_name: movieCast.role_name
+      movie_id: String(movieCast.movie_id),
+      actor_id: String(movieCast.actor_id),
+      role_name: movieCast.role_name || ''
     })
     setShowForm(true)
   }
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this cast member?')) {
+  const handleDelete = async (movieCast) => {
+    const result = await showConfirm(
+      'Delete Cast Member?',
+      'Are you sure you want to delete this cast member? This action cannot be undone.',
+      'Yes, delete it!'
+    )
+    
+    if (result.isConfirmed) {
       try {
-        await deleteMovieCast(id)
+        showLoading('Deleting cast member...')
+        await deleteMovieCast(movieCast.movie_id, movieCast.actor_id)
+        closeLoading()
+        showSuccess('Cast Deleted!', 'The cast member has been successfully deleted.')
         loadMovieCasts()
+        if (onDataChange) onDataChange() // Refresh counts in dashboard
       } catch (error) {
+        closeLoading()
         console.error('Error deleting movie cast:', error)
+        showError('Error!', 'Failed to delete cast member. Please try again.')
       }
     }
   }
@@ -122,36 +145,27 @@ export default function MovieCastsCRUD() {
     <div className="space-y-6">
       {/* Header */}
       <motion.div
-        className="glass rounded-2xl p-6"
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl" style={{ background: 'var(--gradient-dark)' }}>
-              <FaUsers className="text-white text-xl" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                Movie Casts Management
-              </h2>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Manage cast members and their roles
-              </p>
-            </div>
-          </div>
-          <motion.button
-            onClick={() => setShowForm(true)}
-            className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
-            whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(30, 41, 59, 0.3)' }}
-            whileTap={{ scale: 0.95 }}
-            style={{ background: 'var(--gradient-dark)' }}
-          >
-            <FaPlus />
-            Add Cast Member
-          </motion.button>
+        <div>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Movie Casts Management
+          </h2>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Manage cast members and their roles
+          </p>
         </div>
+        <motion.button
+          onClick={() => setShowForm(true)}
+          className="btn-primary flex items-center gap-2 px-4 py-2"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <FaPlus />
+          Add Cast Member
+        </motion.button>
       </motion.div>
 
       {/* Filters */}
@@ -166,7 +180,7 @@ export default function MovieCastsCRUD() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--text-muted)' }} />
             <input
@@ -215,15 +229,6 @@ export default function MovieCastsCRUD() {
             ))}
           </select>
 
-          <motion.button
-            onClick={loadMovieCasts}
-            className="btn-primary flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <FaSearch />
-            Apply Filters
-          </motion.button>
         </div>
       </motion.div>
 
@@ -273,7 +278,7 @@ export default function MovieCastsCRUD() {
               <tbody>
                 {movieCasts.map((movieCast, index) => (
                   <motion.tr
-                    key={movieCast.id}
+                    key={`${movieCast.movie_id}-${movieCast.actor_id}`}
                     className="border-t border-opacity-10"
                     style={{ borderColor: 'var(--border-color)' }}
                     initial={{ opacity: 0, y: 20 }}
@@ -284,10 +289,10 @@ export default function MovieCastsCRUD() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
-                          {movieCast.actor?.profile_url ? (
+                          {movieCast.actor?.photo_url ? (
                             <img 
-                              src={movieCast.actor.profile_url} 
-                              alt={movieCast.actor.name}
+                              src={movieCast.actor.photo_url} 
+                              alt={movieCast.actor?.name || 'Actor'}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -320,7 +325,10 @@ export default function MovieCastsCRUD() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium" style={{
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        color: 'var(--primary-color)'
+                      }}>
                         Cast Member
                       </span>
                     </td>
@@ -339,7 +347,7 @@ export default function MovieCastsCRUD() {
                           <FaEdit />
                         </motion.button>
                         <motion.button
-                          onClick={() => handleDelete(movieCast.id)}
+                          onClick={() => handleDelete(movieCast)}
                           className="p-2 rounded-lg transition-colors"
                           style={{ 
                             background: 'var(--glass-bg)',
@@ -412,15 +420,20 @@ export default function MovieCastsCRUD() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Movie *
-              </label>
+              <FormLabel required>
+                Movie
+              </FormLabel>
               <select
                 required
                 value={formData.movie_id}
                 onChange={e => setFormData({ ...formData, movie_id: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ 
+                  background: 'var(--bg-secondary)', 
+                  border: '1px solid var(--border-color)', 
+                  color: 'var(--text-primary)' 
+                }}
+                disabled={!!editingMovieCast}
               >
                 <option value="">Select Movie</option>
                 {movies.map(movie => (
@@ -429,15 +442,20 @@ export default function MovieCastsCRUD() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Actor *
-              </label>
+              <FormLabel required>
+                Actor
+              </FormLabel>
               <select
                 required
                 value={formData.actor_id}
                 onChange={e => setFormData({ ...formData, actor_id: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ 
+                  background: 'var(--bg-secondary)', 
+                  border: '1px solid var(--border-color)', 
+                  color: 'var(--text-primary)' 
+                }}
+                disabled={!!editingMovieCast}
               >
                 <option value="">Select Actor</option>
                 {actors.map(actor => (
@@ -446,16 +464,20 @@ export default function MovieCastsCRUD() {
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Role Name *
-              </label>
+              <FormLabel required>
+                Role Name
+              </FormLabel>
               <input
                 type="text"
                 required
                 value={formData.role_name}
                 onChange={e => setFormData({ ...formData, role_name: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ 
+                  background: 'var(--bg-secondary)', 
+                  border: '1px solid var(--border-color)', 
+                  color: 'var(--text-primary)' 
+                }}
                 placeholder="e.g., Tony Stark, Captain America"
               />
             </div>
@@ -466,10 +488,15 @@ export default function MovieCastsCRUD() {
               onClick={() => {
                 setShowForm(false);
                 setEditingMovieCast(null);
+                setFormData({ movie_id: '', actor_id: '', role_name: '' });
               }}
-              className="px-6 py-3 rounded-xl font-medium"
-              style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-              whileHover={{ scale: 1.02 }}
+              className="px-6 py-3 rounded-xl font-medium transition-all duration-200"
+              style={{ 
+                background: 'var(--bg-secondary)', 
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)'
+              }}
+              whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
               Cancel
@@ -477,8 +504,13 @@ export default function MovieCastsCRUD() {
             <motion.button
               type="submit"
               disabled={loading}
-              className="btn-primary flex items-center gap-2 px-6 py-3"
-              whileHover={{ scale: loading ? 1 : 1.02 }}
+              className="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200"
+              style={{
+                background: 'var(--gradient-primary)',
+                color: 'white',
+                boxShadow: 'var(--glass-shadow)'
+              }}
+              whileHover={{ scale: loading ? 1 : 1.02, y: -2 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
             >
               {loading ? (

@@ -11,7 +11,7 @@ import FormLabel from '../FormLabel'
 import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 import FileUpload from '../FileUpload';
 
-export default function ActorsCRUD() {
+export default function ActorsCRUD({ onDataChange }) {
   const [actors, setActors] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -80,6 +80,7 @@ export default function ActorsCRUD() {
       setFormData({ name: '', birth_date: '', nationality: '', bio: '', photo_url: '' });
       setPhotoFile(null);
       loadActors();
+      if (onDataChange) onDataChange() // Refresh counts in dashboard
     } catch (error) {
       console.error('Error saving actor:', error);
     } finally {
@@ -105,6 +106,7 @@ export default function ActorsCRUD() {
       try {
         await deleteActor(id)
         loadActors()
+        if (onDataChange) onDataChange() // Refresh counts in dashboard
       } catch (error) {
         console.error('Error deleting actor:', error)
       }
@@ -293,10 +295,12 @@ export default function ActorsCRUD() {
                 </p>
               )}
 
-              <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                <FaFilm />
-                <span>Added {new Date(actor.created_at).toLocaleDateString()}</span>
-              </div>
+              {actor.movies_count > 0 && (
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <FaFilm />
+                  <span>{actor.movies_count} {actor.movies_count === 1 ? 'movie' : 'movies'}</span>
+                </div>
+              )}
             </motion.div>
           ))
         )}

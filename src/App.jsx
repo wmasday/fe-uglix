@@ -67,6 +67,12 @@ function App() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return movies.filter((m) => {
+      // Only show published movies for non-authenticated users
+      // Backend should already filter, but double-check on frontend
+      if (m.is_published === false) {
+        return false;
+      }
+      
       const matchesQuery =
         !q ||
         m.title?.toLowerCase().includes(q) ||

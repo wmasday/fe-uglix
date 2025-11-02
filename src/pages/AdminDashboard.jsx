@@ -24,7 +24,7 @@ import GenresCRUD from "../components/admin/GenresCRUD";
 import ActorsCRUD from "../components/admin/ActorsCRUD";
 import EpisodesCRUD from "../components/admin/EpisodesCRUD";
 import MovieCastsCRUD from "../components/admin/MovieCastsCRUD";
-import { fetchMoviesAdmin, fetchGenresAdmin } from '../api';
+import { fetchMoviesAdmin, fetchGenresAdmin, fetchMovieCastsAdmin } from '../api';
 import { fetchActorsAdmin } from '../api';
 import { fetchEpisodesAdmin } from '../api';
 
@@ -36,26 +36,43 @@ export default function AdminDashboard() {
   // Dynamic counts
   const [counts, setCounts] = useState({ movies: 0, genres: 0, actors: 0, episodes: 0, "movie-casts": 0 });
 
-  useEffect(() => {
-    async function fetchAllCounts() {
+  const fetchAllCounts = async () => {
+    try {
       // Movies
       const movies = await fetchMoviesAdmin({ perPage: 1 });
-      // Genres
-      const genres = await fetchGenresAdmin({ perPage: 1 });
+      // Genres - fetchGenresAdmin returns paginated format with total
+      const genresResponse = await fetchGenresAdmin({ perPage: 1 });
       // Actors
       const actors = await fetchActorsAdmin({ perPage: 1 });
       // Episodes
       const episodes = await fetchEpisodesAdmin({ perPage: 1 });
+      // Movie Casts
+      const movieCasts = await fetchMovieCastsAdmin({ perPage: 1 });
       setCounts({
         movies: movies.total || 0,
-        genres: genres.total || 0,
+        genres: genresResponse.total || 0,
         actors: actors.total || 0,
         episodes: episodes.total || 0,
-        "movie-casts": 0 // TODO: fetch movie casts count if/when backend supports it
+        "movie-casts": movieCasts.total || 0
       });
+    } catch (error) {
+      console.error('Error fetching counts:', error);
+      // Set counts to 0 on error to prevent showing stale data
+      setCounts({ movies: 0, genres: 0, actors: 0, episodes: 0, "movie-casts": 0 });
     }
+  };
+
+  useEffect(() => {
     fetchAllCounts();
   }, []);
+
+  // Refresh counts when active tab changes (after CRUD operations)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchAllCounts();
+    }, 500); // Small delay to allow backend to process
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   const tabs = [
     { id: "movies", label: "Movies", icon: FaFilm, count: counts.movies },
@@ -73,17 +90,17 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case "movies":
-        return <MoviesCRUD />;
+        return <MoviesCRUD onDataChange={fetchAllCounts} />;
       case "genres":
-        return <GenresCRUD />;
+        return <GenresCRUD onDataChange={fetchAllCounts} />;
       case "actors":
-        return <ActorsCRUD />;
+        return <ActorsCRUD onDataChange={fetchAllCounts} />;
       case "episodes":
-        return <EpisodesCRUD />;
+        return <EpisodesCRUD onDataChange={fetchAllCounts} />;
       case "movie-casts":
-        return <MovieCastsCRUD />;
+        return <MovieCastsCRUD onDataChange={fetchAllCounts} />;
       default:
-        return <MoviesCRUD />;
+        return <MoviesCRUD onDataChange={fetchAllCounts} />;
     }
   };
 

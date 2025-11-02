@@ -10,7 +10,7 @@ import ModernModal from '../ModernModal'
 import FormLabel from '../FormLabel'
 import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
-export default function GenresCRUD() {
+export default function GenresCRUD({ onDataChange }) {
   const [genres, setGenres] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -67,6 +67,7 @@ export default function GenresCRUD() {
       setEditingGenre(null)
       setFormData({ name: '', description: '' })
       loadGenres()
+      if (onDataChange) onDataChange() // Refresh counts in dashboard
     } catch (error) {
       closeLoading()
       console.error('Error saving genre:', error)
@@ -99,6 +100,7 @@ export default function GenresCRUD() {
         closeLoading()
         showSuccess('Genre Deleted!', 'The genre has been successfully deleted.')
         loadGenres()
+        if (onDataChange) onDataChange() // Refresh counts in dashboard
       } catch (error) {
         closeLoading()
         console.error('Error deleting genre:', error)
@@ -252,10 +254,12 @@ export default function GenresCRUD() {
                 </p>
               )}
 
-              <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                <FaFilm />
-                <span>Created {new Date(genre.created_at).toLocaleDateString()}</span>
-              </div>
+              {genre.movies_count > 0 && (
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <FaFilm />
+                  <span>{genre.movies_count} {genre.movies_count === 1 ? 'movie' : 'movies'}</span>
+                </div>
+              )}
             </motion.div>
           ))
         )}

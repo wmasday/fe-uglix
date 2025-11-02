@@ -13,7 +13,7 @@ import FileUpload from '../FileUpload'
 import FormLabel from '../FormLabel'
 import { showSuccess, showError, showConfirm, showLoading, closeLoading } from '../../utils/sweetAlert'
 
-export default function MoviesCRUD() {
+export default function MoviesCRUD({ onDataChange }) {
   const [movies, setMovies] = useState([])
   const [genres, setGenres] = useState([])
   const [loading, setLoading] = useState(false)
@@ -41,8 +41,11 @@ export default function MoviesCRUD() {
   const [posterFile, setPosterFile] = useState(null)
 
   useEffect(() => {
-    loadMovies()
     loadGenres()
+  }, [])
+
+  useEffect(() => {
+    loadMovies()
   }, [currentPage, search, genreFilter, statusFilter])
 
   const loadMovies = async () => {
@@ -89,21 +92,42 @@ export default function MoviesCRUD() {
     showLoading(editingMovie ? 'Updating movie...' : 'Creating movie...')
     
     try {
-      const submitData = { ...formData }
-      
       // Handle file upload if poster file is selected
       if (posterFile) {
-        // In a real app, you would upload the file to a server
-        // For now, we'll use a placeholder URL
-        submitData.poster_url = URL.createObjectURL(posterFile)
-      }
-      
-      if (editingMovie) {
-        await updateMovie(editingMovie.id, submitData)
-        showSuccess('Movie Updated!', 'The movie has been successfully updated.')
+        const formDataObj = new FormData()
+        formDataObj.append('poster', posterFile)
+        formDataObj.append('title', formData.title)
+        formDataObj.append('description', formData.description || '')
+        formDataObj.append('release_year', formData.release_year || '')
+        formDataObj.append('duration_sec', formData.duration_sec || '')
+        formDataObj.append('rating', formData.rating || '')
+        formDataObj.append('country', formData.country || '')
+        formDataObj.append('type', formData.type)
+        formDataObj.append('is_published', formData.is_published ? '1' : '0')
+        formDataObj.append('genre_id', formData.genre_id || '')
+        formDataObj.append('sources_url', formData.sources_url)
+        
+        if (editingMovie) {
+          await updateMovie(editingMovie.id, formDataObj, true)
+          showSuccess('Movie Updated!', 'The movie has been successfully updated.')
+        } else {
+          await createMovie(formDataObj, true)
+          showSuccess('Movie Created!', 'The movie has been successfully created.')
+        }
       } else {
-        await createMovie(submitData)
-        showSuccess('Movie Created!', 'The movie has been successfully created.')
+        // No file upload, use JSON
+        const submitData = { ...formData }
+        if (!submitData.poster_url) {
+          delete submitData.poster_url // Don't send empty poster_url
+        }
+        
+        if (editingMovie) {
+          await updateMovie(editingMovie.id, submitData)
+          showSuccess('Movie Updated!', 'The movie has been successfully updated.')
+        } else {
+          await createMovie(submitData)
+          showSuccess('Movie Created!', 'The movie has been successfully created.')
+        }
       }
       
       closeLoading()
@@ -124,6 +148,7 @@ export default function MoviesCRUD() {
         sources_url: ''
       })
       loadMovies()
+      if (onDataChange) onDataChange() // Refresh counts in dashboard
     } catch (error) {
       closeLoading()
       console.error('Error saving movie:', error)
@@ -168,6 +193,7 @@ export default function MoviesCRUD() {
         closeLoading()
         showSuccess('Movie Deleted!', 'The movie has been successfully deleted.')
         loadMovies()
+        if (onDataChange) onDataChange() // Refresh counts in dashboard
       } catch (error) {
         closeLoading()
         console.error('Error deleting movie:', error)
@@ -229,7 +255,7 @@ export default function MoviesCRUD() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--text-muted)' }} />
             <input
@@ -264,7 +290,10 @@ export default function MoviesCRUD() {
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              setCurrentPage(1) // Reset to first page on filter change
+            }}
             className="px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-offset-0"
             style={{
               background: 'var(--bg-secondary)',
@@ -277,15 +306,6 @@ export default function MoviesCRUD() {
             <option value="draft">Draft</option>
           </select>
 
-          <motion.button
-            onClick={loadMovies}
-            className="btn-primary flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <FaFilter />
-            Apply Filters
-          </motion.button>
         </div>
       </motion.div>
 
